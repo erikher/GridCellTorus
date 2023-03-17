@@ -24,6 +24,7 @@ from sklearn import preprocessing
 from sklearn.metrics import explained_variance_score
 import sys
 import time
+import os
 
 _LOG_2PI = np.log(2 * np.pi)
 
@@ -764,14 +765,13 @@ times_all['rat_s_SWS'] = ((15135.43,15164.98),
     (22980.85,23133.0))
 
 def get_spikes(rat_name, mod_name, day_name = '', sess_name = '', bType = None, bSmooth = True, 
-               bBinned = True, bSpeed = True, bStart = False, smoothing_width = -1):
-
+               bBinned = True, bSpeed = True, bStart = False, smoothing_width = -1, folder = ''):
     if np.str.upper(rat_name) == 'R':
-        f = np.load('C://Users//erihe/OneDrive - NTNU//Prosjekt//Toroidal_topology_grid_cell_data//rat_r_' + day_name + '_grid_modules_1_2_3.npz', allow_pickle = True)
+        f = np.load(folder + 'rat_r_' + day_name + '_grid_modules_1_2_3.npz', allow_pickle = True)
     elif np.str.upper(rat_name) == 'Q':
-        f = np.load('C://Users//erihe/OneDrive - NTNU//Prosjekt//Toroidal_topology_grid_cell_data//rat_q_grid_modules_1_2.npz', allow_pickle = True)
+        f = np.load(folder + 'rat_q_grid_modules_1_2.npz', allow_pickle = True)
     elif np.str.upper(rat_name) == 'S':
-        f = np.load('C://Users//erihe/OneDrive - NTNU//Prosjekt//Toroidal_topology_grid_cell_data//rat_s_grid_modules_1.npz', allow_pickle = True)
+        f = np.load(folder + 'rat_s_grid_modules_1.npz', allow_pickle = True)
     else:
         print('Correct rat name was not given')
         return
@@ -783,7 +783,7 @@ def get_spikes(rat_name, mod_name, day_name = '', sess_name = '', bType = None, 
     f.close()
     cell_inds = np.arange(len(spikes_all))
     if bType:    
-        f = np.load('Toroidal_topology_grid_cell_data/is_conjunctive_all.npz', allow_pickle = True)
+        f = np.load('is_conjunctive_all.npz', allow_pickle = True)
         if len(day_name)>0:
             is_conj = f['is_conj_' + np.str.upper(rat_name) + mod_name + '_' + day_name]
         else:
@@ -793,16 +793,16 @@ def get_spikes(rat_name, mod_name, day_name = '', sess_name = '', bType = None, 
             cell_inds = cell_inds[is_conj]
         else:
             cell_inds = cell_inds[~is_conj]
-    gridclass = sess_name.find('_')
-    if gridclass: 
-        f = np.load('Toroidal_topology_grid_cell_data/Results/grid_cell_classes_indices.npz', allow_pickle = True)
+    
+    if sess_name.find('_')>-1: 
+        f = np.load( folder + 'Results/grid_cell_classes_indices.npz', allow_pickle = True)
         ind = f[np.str.upper(rat_name) + mod_name + '_ind']
         f.close()
-        if sess_name[gridclass+1:] == 'bursty':
+        if sess_name[sess_name.find('_')+1:] == 'bursty':
             cell_inds = cell_inds[ind==0]
-        elif sess_name[gridclass+1:] == 'theta':
+        elif sess_name[sess_name.find('_')+1:] == 'theta':
             cell_inds = cell_inds[ind==1]
-        elif sess_name[gridclass+1:] == 'nonbursty':
+        elif sess_name[sess_name.find('_')+1:] == 'nonbursty':
             cell_inds = cell_inds[ind==2]
     if np.str.upper(sess_name[:3]) in ('SWS', 'REM'):
         times = times_all['rat_' + np.str.lower(rat_name) + '_sleep' + day_name]
@@ -977,7 +977,7 @@ def get_spikes(rat_name, mod_name, day_name = '', sess_name = '', bType = None, 
 
             
         if bSpeed: 
-            xx, yy, aa, tt, speed = load_pos(rat_name, sess_name[:2], day_name, bSpeed = True)
+            xx, yy, aa, tt, speed = load_pos(rat_name, sess_name[:2], day_name, bSpeed = True, folder = folder)
             spikes_bin = spikes_bin[speed>2.5,:]            
             xx = xx[speed>2.5]
             yy = yy[speed>2.5]
@@ -988,13 +988,13 @@ def get_spikes(rat_name, mod_name, day_name = '', sess_name = '', bType = None, 
 
 
 
-def load_pos(rat_name, sess_name, day_name = '', bSpeed = False):    
+def load_pos(rat_name, sess_name, day_name = '', bSpeed = False, folder = ''):    
     if np.str.upper(rat_name) == 'R':
-        f = np.load('C://Users//erihe/OneDrive - NTNU//Prosjekt//Toroidal_topology_grid_cell_data//rat_r_' + day_name + '_grid_modules_1_2_3.npz', allow_pickle = True)
+        f = np.load(folder + 'rat_r_' + day_name + '_grid_modules_1_2_3.npz', allow_pickle = True)
     elif np.str.upper(rat_name) == 'Q':
-        f = np.load('C://Users//erihe/OneDrive - NTNU//Prosjekt//Toroidal_topology_grid_cell_data//rat_q_grid_modules_1_2.npz', allow_pickle = True)
+        f = np.load(folder + 'rat_q_grid_modules_1_2.npz', allow_pickle = True)
     elif np.str.upper(rat_name) == 'S':
-        f = np.load('C://Users//erihe/OneDrive - NTNU//Prosjekt//Toroidal_topology_grid_cell_data//rat_s_grid_modules_1.npz', allow_pickle = True)
+        f = np.load(folder + 'rat_s_grid_modules_1.npz', allow_pickle = True)
     else:
         print('Correct rat name was not given')
         return
@@ -1065,7 +1065,7 @@ def load_pos(rat_name, sess_name, day_name = '', bSpeed = False):
         speed = np.sqrt(dx**2+ dy**2)/0.01
         speed = np.concatenate(([speed[0]],speed))
         if (np.str.upper(rat_name) =='S') & (sess_name == 'WW'):
-            xx1, yy1, aa1, tt1, speed1 = load_pos(rat_name, 'WW2', day_name, True)
+            xx1, yy1, aa1, tt1, speed1 = load_pos(rat_name, 'WW2', day_name, True, folder = folder)
             xx = np.concatenate((xx,xx1))
             yy = np.concatenate((yy,yy1))
             aa = np.concatenate((aa,aa1))
@@ -1073,7 +1073,7 @@ def load_pos(rat_name, sess_name, day_name = '', bSpeed = False):
             speed = np.concatenate((speed,speed1))
         return xx, yy, aa, tt, speed
     if (np.str.upper(rat_name) =='S') & (sess_name == 'WW'):
-        xx1, yy1, aa1, tt1 = load_pos(rat_name, 'WW2')
+        xx1, yy1, aa1, tt1 = load_pos(rat_name, 'WW2', folder = folder)
         xx = np.concatenate((xx,xx1))
         yy = np.concatenate((yy,yy1))
         aa = np.concatenate((aa,aa1))
@@ -1171,7 +1171,7 @@ def plot_barcode(persistence, file_name = ''):
 
 
 
-def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, bPlot = False):
+def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, bPlot = False, folder = ''):
     num_shuffle = 100
     numangsint = 51
     numangsint_1 = numangsint-1
@@ -1186,7 +1186,7 @@ def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, b
         file_name_2 += '_' + day_name  
         file_name += '_' + day_name  
     ############################## Load 1 ############################
-    f = np.load('Toroidal_topology_grid_cell_data/Results/' + file_name_1  + '_decoding.npz',
+    f = np.load(folder + 'Results/' + file_name_1  + '_decoding.npz',
         allow_pickle = True)
     call = f['coords']
     callbox_1 = f['coordsbox']
@@ -1196,7 +1196,7 @@ def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, b
     times_1 = f['times']
     f.close()    
     ############################## Load 2 ############################
-    f = np.load('Toroidal_topology_grid_cell_data/Results/' + file_name_2 + '_decoding.npz',
+    f = np.load(folder + 'Results/' + file_name_2 + '_decoding.npz',
         allow_pickle = True)
     call = f['coords']
     callbox_2 = f['coordsbox']
@@ -1210,7 +1210,7 @@ def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, b
     callbox_2 = callbox_2[t_box_2,:]
     
     ############################## compare ############################
-    f = np.load('Toroidal_topology_grid_cell_data/Results/' + file_name_1 + '_para.npz', allow_pickle = True)
+    f = np.load(folder + 'Results/' + file_name_1 + '_para.npz', allow_pickle = True)
     p1b_1 = f['p1b_1']
     p2b_1 = f['p2b_1']
     m1b_1 = f['m1b_1']
@@ -1250,7 +1250,7 @@ def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, b
     else:
         cbox1 = cc1.copy()
 
-    f = np.load('Toroidal_topology_grid_cell_data/Results/' + file_name_2 + '_para.npz', allow_pickle = True)
+    f = np.load(folder + 'Results/' + file_name_2 + '_para.npz', allow_pickle = True)
     p1b_2 = f['p1b_1']
     p2b_2 = f['p2b_1']
     m1b_2 = f['m1b_1']
@@ -1296,7 +1296,7 @@ def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, b
     cbox1 = (cbox1 - pshift)%(2*np.pi)
     cc1 = (cc1 - pshift)%(2*np.pi)
 
-    np.savez_compressed('Toroidal_topology_grid_cell_data/Results/' + file_name + '_alignment_dec',
+    np.savez_compressed(folder + 'Results/' + file_name + '_alignment_dec',
                         pshift = pshift,
                         cbox = cbox1,
                         times_box = times_box_1[t_box_1],
@@ -1307,7 +1307,7 @@ def toroidal_alignment(rat_name, mod_name, sess_name_0, sess_name_1, day_name, b
                         times_of = times_2
                        )
     if bPlot:
-        xx, yy, __, __, speed = load_pos(rat_name, 'OF', day_name, bSpeed = True)
+        xx, yy, __, __, speed = load_pos(rat_name, 'OF', day_name, bSpeed = True, folder = folder)
         xx = xx[speed>2.5]
         yy = yy[speed>2.5]
         xx = xx[times_box_1[t_box_1]]
@@ -1359,20 +1359,20 @@ def rot_coord(params1,params2, c1, c2, p):
     return np.concatenate((cc1[:,np.newaxis], cc2[:,np.newaxis]),1)%(2*np.pi)
 
 
-def fit_para(rat_name, mod_name, sess_name, day_name):
+def fit_para(rat_name, mod_name, sess_name, day_name, folder = ''):
     ############################## Fit parallelogram to space ############################
 
     file_name =  rat_name + '_' + mod_name + '_' + sess_name 
     if len(day_name)>0:
         file_name += '_' + day_name  
     ############################## Load 1 ############################
-    f = np.load('Toroidal_topology_grid_cell_data/Results/' + file_name  + '_decoding.npz',
+    f = np.load(folder + 'Results/' + file_name  + '_decoding.npz',
         allow_pickle = True)
     c11all_orig1 = f['coordsbox'][:,0]
     c12all_orig1 = f['coordsbox'][:,1]
     times = f['times_box']
     f.close()    
-    xx,yy, __, __, speed = load_pos(rat_name, 'OF', day_name, bSpeed = True)   
+    xx,yy, __, __, speed = load_pos(rat_name, 'OF', day_name, bSpeed = True, folder = folder)   
     xx = xx[speed>2.5]
     yy = yy[speed>2.5]
     xx = xx[times]
@@ -1383,7 +1383,7 @@ def fit_para(rat_name, mod_name, sess_name, day_name):
     p1b_1, f1 = fit_sine_wave(m1b_1)
     p2b_1, f2 = fit_sine_wave(m2b_1)
 
-    np.savez_compressed('Toroidal_topology_grid_cell_data/Results/' + file_name + '_para', 
+    np.savez_compressed(folder + 'Results/' + file_name + '_para', 
         p1b_1 = p1b_1, 
         p2b_1 = p2b_1,
         m1b_1 = m1b_1, 
@@ -1951,7 +1951,7 @@ def glm2d(xxss, ys, num_bins, periodicprior,  LAM, GoGaussian, nF):
             yt[fg] = expH
             finthechat = (np.ravel(np.log(factorial(ys[fg]))))
             LL[fg] = (np.ravel(ys[fg]*H - expH)) - finthechat
-    if GoGaussian
+    if GoGaussian:
         leastsq = np.sum( (ys-yt)**2)
         ym = np.mean(ys)
         expl_deviance =  (1. - leastsq/np.sum((ys-ym)**2))
@@ -1990,5 +1990,3 @@ def glm2d(xxss, ys, num_bins, periodicprior,  LAM, GoGaussian, nF):
         
         expl_deviance = 1 - (np.sum(LS) - np.sum(LL[~np.isinf(LL)]))/(np.sum(LS) - np.sum(LLnull[~np.isinf(LL)]))
     return expl_deviance
-
-
